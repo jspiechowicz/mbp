@@ -1,0 +1,32 @@
+/*
+ * Massive Brownian Particle
+ *
+ * $\ddot{x} + \gamma\dot{x} = -V'(x) + a\cos(\omega t) + f + \xi(t) + \eta(t)
+ *
+ * see J. Spiechowicz, J. Luczka and P. Hanggi, J. Stat. Mech. (2013) P02044
+ *
+ * (C) 2013 Jakub Spiechowicz
+ *
+ *          Institute of Physics, University of Silesia, Katowice
+ *
+ * Features included:
+ *
+ *  - Gaussian and Poissonian white noise
+ *  - exponential Poissonian kicks amplitude distribution
+ *  - simplified weak order 1.0 regular euler-maruyama scheme
+ *  - simplified weak order 2.0 adapted predictor-corrector scheme
+ *  - asymptotic long time average velocity <<v>> and <<v^2>>
+ *  - ensemble averaged trajectory <x>(t) and <v>(t)
+ *  - the final position of all paths for histogram generation
+ *  - path parameters folding for utilization of single precision arithmetics
+ *  - scan over multiple values of the system parameters in a single kernel call
+ *  - simultaneous scan over two system parameters
+ *
+ * TO DO:
+ *
+ *  - more output modes (correlation function and power spectrum)
+ *  - dichotomic noise
+ *  - different Poissonian kicks amplitude distribution
+ *  - recode command line parsing for use of less options
+ *
+ */
