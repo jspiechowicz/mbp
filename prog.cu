@@ -377,11 +377,11 @@ __device__ void eulermaruyama(float &nl_x, float l_x, float &nl_v, float l_v, fl
     nl_w = l_wt;
 }
 
-__device__ void fold(float &nx, float x, float y, int &nfc, int fc)
+__device__ void fold(float &nx, float x, float y, float &nfc, float fc)
 //reduce periodic variable to the base domain
 {
     nx = x - floor(x/y)*y;
-    nfc = (int) fc + floor(x/y)*y;
+    nfc = fc + floor(x/y)*y;
 }
 
 __global__ void run_moments(float *d_x, float *d_v, float *d_w, float *d_sv, float *d_sv2, float *d_dx, curandState *d_states)
@@ -448,10 +448,10 @@ __global__ void run_moments(float *d_x, float *d_v, float *d_w, float *d_sv, flo
     l_trigger = d_trigger;
 
     //counters for folding
-    int xfc, wfc;
+    float xfc, wfc;
     
-    xfc = 0;
-    wfc = 0;
+    xfc = 0.0f;
+    wfc = 0.0f;
 
     int l_2ndorder, pcd;
 
@@ -488,7 +488,7 @@ __global__ void run_moments(float *d_x, float *d_v, float *d_w, float *d_sv, flo
     }
 
     //write back path parameters to the global memory
-    d_x[idx] = l_x + (float) xfc;
+    d_x[idx] = l_x + xfc;
     d_v[idx] = l_v;
     d_w[idx] = l_w;
     d_sv[idx] = l_sv;
@@ -529,10 +529,10 @@ __global__ void run_traj(float *d_x, float *d_v, float *d_w, curandState *d_stat
     l_steps = d_steps;
 
     //counters for folding
-    int xfc, wfc;
+    float xfc, wfc;
     
-    xfc = 0;
-    wfc = 0;
+    xfc = 0.0f;
+    wfc = 0.0f;
 
     int l_2ndorder, pcd;
 
@@ -564,7 +564,7 @@ __global__ void run_traj(float *d_x, float *d_v, float *d_w, curandState *d_stat
     }
 
     //write back path parameters to the global memory
-    d_x[idx] = l_x + (float) xfc;
+    d_x[idx] = l_x + xfc;
     d_v[idx] = l_v;
     d_w[idx] = l_w;
     d_states[idx] = l_state;
