@@ -13,7 +13,7 @@ lmd = 0
 comp = 0
 
 #Simulation
-dev = 1
+dev = 3
 block = 64
 paths = 4096
 periods = 2000
@@ -29,7 +29,7 @@ endx = 0.2
 domain = '1d'
 domainx = 'f'
 logx = 0
-DIRNAME='./'
+DIRNAME='./tests/jstatmech/'
 os.system('mkdir -p %s' % DIRNAME)
 
 os.system('rm -v %s*.dat %s*.png' % (DIRNAME, DIRNAME))

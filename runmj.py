@@ -15,7 +15,7 @@ lmd = 0
 comp = 0
 
 #Simulation
-dev = 2
+dev = 3
 block = 64
 paths = 4096
 periods = 2000
@@ -31,7 +31,7 @@ endx = 0.25
 domain = '1d'
 domainx = 'f'
 logx = 0
-DIRNAME='./'
+DIRNAME='./tests/mj/'
 os.system('mkdir -p %s' % DIRNAME)
 
 os.system('rm -v %s*.dat %s*.png' % (DIRNAME, DIRNAME))
