@@ -103,9 +103,9 @@ void usage(char **argv)
     printf("                            euler: simplified weak order 1.0 regular euler-maruyama\n");
     printf("Output params:\n");
     printf("    -p, --mode=STRING       sets the output mode. STRING can be one of:\n");
-    printf("                            moments: the first two moments <<v>> and <<v^2>>\n");
-    printf("                            trajectory: ensemble averaged <x>(t) and <v>(t)\n");
-    printf("                            histogram: the final position of all paths\n");
+    printf("                            moments: the first two moments <<v>>, <<v^2>> and diffusion coefficient\n");
+    printf("                            trajectory: ensemble averaged <x>(t), <v>(t) and <x^2>(t), <v^2>(t)\n");
+    printf("                            histogram: the final position x and velocity v of all paths\n");
     printf("    -q, --domain=STRING     simultaneously scan over one or two model params. STRING can be one of:\n");
     printf("                            1d: only one parameter; 2d: two parameters at once\n");
     printf("    -r, --domainx=CHAR      sets the first domain of the moments. CHAR can be one of:\n");
@@ -697,44 +697,62 @@ void initial_conditions()
     copy_to_dev();
 }
 
-void moments(float *av, float *av2)
-//calculate the first two moments of v
+void moments(float *av, float *av2, float *dc)
+//calculate the first two moments of <v> and diffusion coefficient
 {
-    float sv, sv2;
+    float sv, sv2, sx, sx2;
     int i, j;
 
     cudaMemcpy(h_sv, d_sv, size_f, cudaMemcpyDeviceToHost);
     cudaMemcpy(h_sv2, d_sv2, size_f, cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_x, d_x, size_f, cudaMemcpyDeviceToHost);
 
     for (j = 0; j < h_points; j++) {
         sv = 0.0f;
         sv2 = 0.0f;
+        sx = 0.0f;
+        sx2 = 0.0f;
 
         for (i = 0; i < h_paths; i++) {
             sv += h_sv[j*h_paths + i];
             sv2 += h_sv2[j*h_paths + i];
+            sx += h_x[j*h_paths + i];
+            sx2 += h_x[j*h_paths + i]*h_x[j*h_paths + i];
         }
 
         av[j] = sv/(h_steps - h_trigger)/h_paths;
         av2[j] = sv2/(h_steps - h_trigger)/h_paths;
+        sx /= h_paths;
+        sx2 /= h_paths;
+        if (h_domainx == 'w') {
+            dc[j] = (sx2 - sx*sx)/(2.0f*h_periods*2.0f*PI/h_dx[j]);
+        } else {
+            dc[j] = (sx2 - sx*sx)/(2.0f*h_periods*2.0f*PI/h_omega);
+        }
     }
 }
 
-void ensemble_average(float *h_x, float *h_v, float &sx, float &sv)
+void ensemble_average(float *h_x, float *h_v, float &sx, float &sv, float &sx2, float &sv2)
 //calculate ensemble average
 {
     int i;
 
     sx = 0.0f;
     sv = 0.0f;
+    sx2 = 0.0f;
+    sv2 = 0.0f;
 
     for (i = 0; i < h_threads; i++) {
         sx += h_x[i];
         sv += h_v[i];
+        sx2 += h_x[i]*h_x[i];
+        sv2 += h_v[i]*h_v[i];
     }
 
     sx /= h_threads;
     sv /= h_threads;
+    sx2 /= h_threads;
+    sv2 /= h_threads;
 }
 
 void finish()
@@ -774,21 +792,22 @@ int main(int argc, char **argv)
     
     initial_conditions();
     
-    //asymptotic long time average velocity <<v>> and <<v^2>>
+    //asymptotic long time average velocity <<v>>, <<v^2>> and diffusion coefficient
     if (h_moments) {
-        float *av, *av2;
+        float *av, *av2, *dc;
         int i;
 
         av = (float*)malloc(size_p);
         av2 = (float*)malloc(size_p);
+        dc = (float*)malloc(size_p);
 
         if ( !strcmp(h_domain, "1d") ) {
             run_moments<<<h_grid, h_block>>>(d_x, d_v, d_w, d_sv, d_sv2, d_dx, d_states);
-            moments(av, av2);
+            moments(av, av2, dc);
 
-            printf("#%c <<v>> <<v^2>>\n", h_domainx);
+            printf("#%c <<v>> <<v^2>> D_x\n", h_domainx);
             for (i = 0; i < h_points; i++) {
-                printf("%e %e %e\n", h_dx[i], av[i], av2[i]);
+                printf("%e %e %e %e\n", h_dx[i], av[i], av2[i], dc[i]);
             }
 
         } else {
@@ -798,7 +817,7 @@ int main(int argc, char **argv)
             dytmp = h_beginy;
             dystep = (h_endy - h_beginy)/h_points;
             
-            printf("#%c %c <<v>> <<v^2>>\n", h_domainx, h_domainy);
+            printf("#%c %c <<v>> <<v^2>> D_x\n", h_domainx, h_domainy);
             
             for (i = 0; i < h_points; i++) {
                 if (h_logy) {
@@ -812,7 +831,8 @@ int main(int argc, char **argv)
                         cudaMemcpyToSymbol(d_amp, &h_dy, sizeof(float));
                         break;
                     case 'w':
-                        cudaMemcpyToSymbol(d_omega, &h_dy, sizeof(float));
+                        h_omega = h_dy;
+                        cudaMemcpyToSymbol(d_omega, &h_omega, sizeof(float));
                         break;
                     case 'f':
                         cudaMemcpyToSymbol(d_force, &h_dy, sizeof(float));
@@ -832,10 +852,10 @@ int main(int argc, char **argv)
                 }
 
                 run_moments<<<h_grid, h_block>>>(d_x, d_v, d_w, d_sv, d_sv2, d_dx, d_states);
-                moments(av, av2);
+                moments(av, av2, dc);
                 
                 for (j = 0; j < h_points; j++) {
-                    printf("%e %e %e %e\n", h_dx[j], h_dy, av[j], av2[j]);
+                    printf("%e %e %e %e %e\n", h_dx[j], h_dy, av[j], av2[j], dc[j]);
                 }
 
                 //blank line for plotting purposes
@@ -849,31 +869,36 @@ int main(int argc, char **argv)
 
         free(av);
         free(av2);
+        free(dc);
     }
 
-    //ensemble averaged trajectory <x>(t) and <v>(t)
+    //ensemble averaged trajectory <x>(t), <v>(t) and <x^2>(t), <v^2>(t)
     if (h_traj) {
-        float t, sx, sv;
+        float t, sx, sv, sx2, sv2;
         int i;
+
+        printf("#t <x> <v> <x^2> <v^2>\n");
 
         for (i = 0; i < h_periods; i++) {
             run_traj<<<h_grid, h_block>>>(d_x, d_v, d_w, d_states);
             copy_from_dev();
             t = i*2.0f*PI/h_omega;
-            ensemble_average(h_x, h_v, sx, sv);
-            printf("%e %e %e\n", t, sx, sv);
+            ensemble_average(h_x, h_v, sx, sv, sx2, sv2);
+            printf("%e %e %e %e %e\n", t, sx, sv, sx2, sv2);
         }
     }
 
-    //the final position of all paths
+    //the final position x and velocity v of all paths
     if (h_hist) {
         int i;
 
         run_traj<<<h_grid, h_block>>>(d_x, d_v, d_w, d_states);
         copy_from_dev();
+
+        printf("#x v\n");
         
         for (i = 0; i < h_threads; i++) {
-            printf("%e\n", h_x[i]);
+            printf("%e %e\n", h_x[i], h_v[i]); 
         }
     }
 
