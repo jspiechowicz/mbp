@@ -7,7 +7,6 @@
  *
  */
 
-
 /******
  * !!!!!!!!!!!!!!!!!!!!!!!!!
  * NOT FINISHED!!!!!!!!!!!!!
@@ -26,22 +25,12 @@ float h_omega;
 
 //simulation
 float h_trans;
-int h_dev, h_block, h_grid, h_spp;
-long h_paths, h_periods, h_threads, h_steps, h_trigger;
-
-//output
-char *h_domain;
-char h_domainx, h_domainy;
-float h_beginx, h_endx, h_beginy, h_endy;
-int h_logx, h_logy, h_points, h_moments, h_traj, h_hist;
+int h_spp;
+long h_paths, h_periods, h_steps, h_trigger;
 
 //vector
-float *h_x, *h_v, *h_w, *h_sv, *h_sv2, *h_dx;
-float *d_x, *d_v, *d_w, *d_sv, *d_sv2, *d_dx;
-unsigned int *h_seeds, *d_seeds;
-curandState *d_states;
-
-size_t size_f, size_ui, size_p;
+float *h_x, *h_v, *h_w;
+size_t size_f;
 
 static struct option options[] = {
     {"amp", required_argument, NULL, 'a'},
@@ -52,24 +41,11 @@ static struct option options[] = {
     {"Dp", required_argument, NULL, 'f'},
     {"lambda", required_argument, NULL, 'g'},
     {"comp", required_argument, NULL, 'h'},
-    {"dev", required_argument, NULL, 'i'},
-    {"block", required_argument, NULL, 'j'},
     {"paths", required_argument, NULL, 'k'},
     {"periods", required_argument, NULL, 'l'},
     {"trans", required_argument, NULL, 'm'},
     {"spp", required_argument, NULL, 'n'},
     {"algorithm", required_argument, NULL, 'o'},
-    {"mode", required_argument, NULL, 'p'},
-    {"domain", required_argument, NULL, 'q'},
-    {"domainx", required_argument, NULL, 'r'},
-    {"domainy", required_argument, NULL, 's'},
-    {"logx", required_argument, NULL, 't'},
-    {"logy", required_argument, NULL, 'u'},
-    {"points", required_argument, NULL, 'v'},
-    {"beginx", required_argument, NULL, 'w'},
-    {"endx", required_argument, NULL, 'y'},
-    {"beginy", required_argument, NULL, 'z'},
-    {"endy", required_argument, NULL, 'A'}
 };
 
 void usage(char **argv)
@@ -86,8 +62,6 @@ void usage(char **argv)
     printf("    -h, --comp=INT          choose between biased and unbiased Poissonian noise. INT can be one of:\n");
     printf("                            0: biased; 1: unbiased\n");
     printf("Simulation params:\n");
-    printf("    -i, --dev=INT           set the gpu device to INT\n");
-    printf("    -j, --block=INT         set the gpu block size to INT\n");
     printf("    -k, --paths=LONG        set the number of paths to LONG\n");
     printf("    -l, --periods=LONG      set the number of periods to LONG\n");
     printf("    -m, --trans=FLOAT       specify fraction FLOAT of periods which stands for transients\n");
@@ -96,24 +70,6 @@ void usage(char **argv)
     printf("    -o, --algorithm=STRING  sets the algorithm. STRING can be one of:\n");
     printf("                            predcorr: simplified weak order 2.0 adapted predictor-corrector\n");
     printf("                            euler: simplified weak order 1.0 regular euler-maruyama\n");
-    printf("Output params:\n");
-    printf("    -p, --mode=STRING       sets the output mode. STRING can be one of:\n");
-    printf("                            moments: the first two moments <<v>>, <<v^2>> and diffusion coefficient\n");
-    printf("                            trajectory: ensemble averaged <x>(t), <v>(t) and <x^2>(t), <v^2>(t)\n");
-    printf("                            histogram: the final position x and velocity v of all paths\n");
-    printf("    -q, --domain=STRING     simultaneously scan over one or two model params. STRING can be one of:\n");
-    printf("                            1d: only one parameter; 2d: two parameters at once\n");
-    printf("    -r, --domainx=CHAR      sets the first domain of the moments. CHAR can be one of:\n");
-    printf("                            a: amp; w: omega, f: force; g: gam; D: Dg; p: Dp; l: lambda\n");
-    printf("    -s, --domainy=CHAR      sets the second domain of the moments (only if --domain=2d). CHAR can be the same as above.\n");
-    printf("    -t, --logx=INT          choose between linear and logarithmic scale of the domainx\n");
-    printf("                            0: linear; 1: logarithmic\n");
-    printf("    -u, --logy=INT          the same as above but for domainy\n");
-    printf("    -v, --points=INT        set the number of samples to generate between begin and end\n");
-    printf("    -w, --beginx=FLOAT      set the starting value of the domainx to FLOAT\n");
-    printf("    -y, --endx=FLOAT        set the end value of the domainx to FLOAT\n");
-    printf("    -z, --beginy=FLOAT      the same as --beginx, but for domainy\n");
-    printf("    -A, --endy=FLOAT        the same as --endx, but for domainy\n");
     printf("\n");
 }
 
@@ -148,12 +104,6 @@ void parse_cla(int argc, char **argv)
             case 'h':
                 itmp = atoi(optarg);
                 break;
-            case 'i':
-                itmp = atoi(optarg);
-                break;
-            case 'j':
-                h_block = atoi(optarg);
-                break;
             case 'k':
                 h_paths = atol(optarg);
                 break;
@@ -172,68 +122,17 @@ void parse_cla(int argc, char **argv)
                 else if ( !strcmp(optarg, "euler") )
                     itmp = 0;
                 break;
-            case 'p':
-                if ( !strcmp(optarg, "moments") ) {
-                    h_moments = 1;
-                    h_traj = 0;
-                    h_hist = 0;
-                } else if ( !strcmp(optarg, "trajectory") ) {
-                    h_traj = 1;
-                    h_hist = 0;
-                    h_moments = 0;
-                } else if ( !strcmp(optarg, "histogram") ) {
-                    h_moments = 0;
-                    h_traj = 0;
-                    h_hist = 1;
-                }
-                break;
-            case 'q':
-                h_domain = optarg;
-                break;
-            case 'r':
-                h_domainx = optarg[0]; 
-                break;
-            case 's':
-                h_domainy = optarg[0];
-                break;
-            case 't':
-                h_logx = atoi(optarg);
-                break;
-            case 'u':
-                h_logy = atoi(optarg);
-                break;
-            case 'v':
-                h_points = atoi(optarg);
-                break;
-            case 'w':
-                h_beginx = atof(optarg);
-                break;
-            case 'y':
-                h_endx = atof(optarg);
-                break;
-            case 'z':
-                h_beginy = atof(optarg);
-                break;
-            case 'A':
-                h_endy = atof(optarg);
-                break;
         }
     }
 }
 
-__global__ void init_dev_rng(unsigned int *d_seeds, curandState *d_states)
-{
-    long idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    curand_init(d_seeds[idx], idx, 0, &d_states[idx]);
-}
-
-__device__ float drift(float l_x, float l_v, float l_w, float l_gam, float l_amp, float l_force)
+float drift(float l_x, float l_v, float l_w, float l_gam, float l_amp, float l_force)
 {
     return -l_gam*l_v - 2.0f*PI*cosf(2.0f*PI*l_x) + l_amp*cosf(l_w) + l_force;
 }
 
-__device__ float diffusion(float l_gam, float l_Dg, float l_dt, int l_2ndorder, curandState *l_state)
+float diffusion(float l_gam, float l_Dg, float l_dt, int l_2ndorder, curandState *l_state)
 {
     if (l_Dg != 0.0f) {
         float r = curand_uniform(l_state);
@@ -358,14 +257,14 @@ __device__ void eulermaruyama(float &nl_x, float l_x, float &nl_v, float l_v, fl
     nl_w = l_wt;
 }
 
-__device__ void fold(float &nx, float x, float y, float &nfc, float fc)
+void fold(float &nx, float x, float y, float &nfc, float fc)
 //reduce periodic variable to the base domain
 {
     nx = x - floor(x/y)*y;
     nfc = fc + floor(x/y)*y;
 }
 
-__global__ void run_moments(float *d_x, float *d_v, float *d_w, float *d_sv, float *d_sv2, float *d_dx, curandState *d_states)
+void run_moments(float *d_x, float *d_v, float *d_w, float *d_sv, float *d_sv2, float *d_dx, curandState *d_states)
 //actual moments kernel
 {
     long idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -477,373 +376,92 @@ __global__ void run_moments(float *d_x, float *d_v, float *d_w, float *d_sv, flo
     d_states[idx] = l_state;
 }
 
-__global__ void run_traj(float *d_x, float *d_v, float *d_w, curandState *d_states)
-//actual trajectory kernel
-{
-    long idx = blockIdx.x * blockDim.x + threadIdx.x;
-    float l_x, l_v, l_w; 
-    curandState l_state;
-
-    //cache path and model parameters in local variables
-    l_x = d_x[idx];
-    l_v = d_v[idx];
-    l_w = d_w[idx];
-    l_state = d_states[idx];
-
-    float l_amp, l_omega, l_force, l_gam, l_Dg, l_Dp, l_lambda;
-    int l_comp;
-
-    l_amp = d_amp;
-    l_omega = d_omega;
-    l_force = d_force;
-    l_gam = d_gam;
-    l_Dg = d_Dg;
-    l_Dp = d_Dp;
-    l_lambda = d_lambda;
-    l_comp = d_comp;
-
-    //step size & number of steps
-    float l_dt;
-    long l_steps, i;
-
-    l_dt = 2.0f*PI/l_omega/d_spp; 
-    l_steps = d_steps;
-
-    //counters for folding
-    float xfc, wfc;
-    
-    xfc = 0.0f;
-    wfc = 0.0f;
-
-    int l_2ndorder, pcd;
-
-    l_2ndorder = d_2ndorder;
-
-    if (l_2ndorder) {
-        //jump countdown
-        pcd = (int) floor( -logf( curand_uniform(&l_state) )/l_lambda/l_dt + 0.5f );
-    }
-    
-    for (i = 0; i < l_steps; i++) {
-
-        //algorithm
-        if (l_2ndorder) {
-            predcorr(l_x, l_x, l_v, l_v, l_w, l_w, pcd, pcd, &l_state, l_amp, l_omega, l_force, l_gam, l_Dg, l_2ndorder, l_Dp, l_lambda, l_comp, l_dt);
-        } else {
-            eulermaruyama(l_x, l_x, l_v, l_v, l_w, l_w, &l_state, l_amp, l_omega, l_force, l_gam, l_Dg, l_2ndorder, l_Dp, l_lambda, l_comp, l_dt);
-        }
-        
-        //fold path parameters
-        if ( fabs(l_x) > 1.0f ) {
-            fold(l_x, l_x, 1.0f, xfc, xfc);
-        }
-
-        if ( l_w > (2.0f*PI) ) {
-            fold(l_w, l_w, (2.0f*PI), wfc, wfc);
-        }
-
-    }
-
-    //write back path parameters to the global memory
-    d_x[idx] = l_x + xfc;
-    d_v[idx] = l_v;
-    d_w[idx] = l_w;
-    d_states[idx] = l_state;
-}
-
 void prepare()
 //prepare simulation
 {
-    //grid size
-    h_paths = (h_paths/h_block)*h_block;
-    h_threads = h_paths;
-
-    if (h_moments) h_threads *= h_points;
-
-    h_grid = h_threads/h_block;
-
     //number of steps
-    if (h_traj) {
-        h_steps = h_spp;
-    } else {
-        h_steps = h_periods*h_spp;
-    }
+    h_steps = h_periods*h_spp;
      
     //host memory allocation
-    size_f = h_threads*sizeof(float);
-    size_ui = h_threads*sizeof(unsigned int);
-    size_p = h_points*sizeof(float);
-
+    size_f = h_paths*sizeof(float);
     h_x = (float*)malloc(size_f);
     h_v = (float*)malloc(size_f);
     h_w = (float*)malloc(size_f);
-    h_seeds = (unsigned int*)malloc(size_ui);
-
-    //create & initialize host rng
-    curandCreateGeneratorHost(&gen, CURAND_RNG_PSEUDO_DEFAULT);
-    curandSetPseudoRandomGeneratorSeed(gen, time(NULL));
-
-    curandGenerate(gen, h_seeds, h_threads);
- 
-    //device memory allocation
-
-    //copy seeds from host to device
-
-    //initialization of device rng
-    init_dev_rng<<<h_grid, h_block>>>(d_seeds, d_states);
-
-    free(h_seeds);
 
     //moments specific requirements
-    if (h_moments) {
-        h_trigger = h_steps*h_trans;
+    h_trigger = h_steps*h_trans;
 
-        h_sv = (float*)malloc(size_f);
-        h_sv2 = (float*)malloc(size_f);
-        h_dx = (float*)malloc(size_p);
-
-        float dxtmp = h_beginx;
-        float dxstep = (h_endx - h_beginx)/h_points;
-
-        long i;
-        
-        //set domainx
-        for (i = 0; i < h_points; i++) {
-            if (h_logx) {
-                h_dx[i] = pow(10.0f, dxtmp);
-            } else {
-                h_dx[i] = dxtmp;
-            }
-            dxtmp += dxstep;
-        }
-        
-    
-    }
-}
-
-void copy_to_dev()
-{
-    if (h_moments) {
-    }
-}
-
-void copy_from_dev()
-{
-    if (h_moments) {
-    }
+    //moments vec
+    h_sv = (float*)malloc(size_f);
+    h_sv2 = (float*)malloc(size_f);
 }
 
 void initial_conditions()
 //set initial conditions for path parameters
 {
-    curandGenerateUniform(gen, h_x, h_threads); //x in (0,1]
-    curandGenerateUniform(gen, h_v, h_threads);
-    curandGenerateUniform(gen, h_w, h_threads);
-
     long i;
 
-    for (i = 0; i < h_threads; i++) {
-        h_v[i] = 4.0f*h_v[i] - 2.0f; //v in (-2,2]
-        h_w[i] *= 2.0f*PI; //w in (0,2\pi]
+    for (i = 0; i < h_paths; ++i) {
+        h_x[i] = (float)rand()/RAND_MAX; //x in (0,1]
+        h_v[i] = 4.0f*(float)rand()/RAND_MAX - 2.0f; //v in (-2,2]
+        h_w[i] = 2.0f*PI*(float)rand()/RAND_MAX; //w in (0,2\pi]
     }
 
-    if (h_moments) {
-        memset(h_sv, 0, size_f);
-        memset(h_sv2, 0, size_f);
-    }
-    
-    copy_to_dev();
+    memset(h_sv, 0, size_f);
+    memset(h_sv2, 0, size_f);
 }
 
-void moments(float *av, float *av2, float *dc)
+void moments(float *sv, float *sv2, float *dc)
 //calculate the first two moments of <v> and diffusion coefficient
 {
-    float sv, sv2, sx, sx2;
-    int i, j;
-
-
-    for (j = 0; j < h_points; j++) {
-        sv = 0.0f;
-        sv2 = 0.0f;
-        sx = 0.0f;
-        sx2 = 0.0f;
-
-        for (i = 0; i < h_paths; i++) {
-            sv += h_sv[j*h_paths + i];
-            sv2 += h_sv2[j*h_paths + i];
-            sx += h_x[j*h_paths + i];
-            sx2 += h_x[j*h_paths + i]*h_x[j*h_paths + i];
-        }
-
-        av[j] = sv/(h_steps - h_trigger)/h_paths;
-        av2[j] = sv2/(h_steps - h_trigger)/h_paths;
-        sx /= h_paths;
-        sx2 /= h_paths;
-        if (h_domainx == 'w') {
-            dc[j] = (sx2 - sx*sx)/(2.0f*h_periods*2.0f*PI/h_dx[j]);
-        } else {
-            dc[j] = (sx2 - sx*sx)/(2.0f*h_periods*2.0f*PI/h_omega);
-        }
-    }
-}
-
-void ensemble_average(float *h_x, float *h_v, float &sx, float &sv, float &sx2, float &sv2)
-//calculate ensemble average
-{
+    float sx = 0.0f, 
+	  sx2 = 0.0f;
     int i;
 
-    sx = 0.0f;
-    sv = 0.0f;
-    sx2 = 0.0f;
-    sv2 = 0.0f;
-
-    for (i = 0; i < h_threads; i++) {
-        sx += h_x[i];
-        sv += h_v[i];
-        sx2 += h_x[i]*h_x[i];
-        sv2 += h_v[i]*h_v[i];
+    for (i = 0; i < h_paths; i++) {
+      sv += h_sv[i];
+      sv2 += h_sv2[i];
+      sx += h_x[i];
+      sx2 += h_x[i]*h_x[i];
     }
 
-    sx /= h_threads;
-    sv /= h_threads;
-    sx2 /= h_threads;
-    sv2 /= h_threads;
+    sv /= (h_steps - h_trigger)/h_paths;
+    sv2 /= (h_steps - h_trigger)/h_paths;
+    sx /= h_paths;
+    sx2 /= h_paths;
+    dc = (sx2 - sx*sx)/(2.0f*h_periods*2.0f*PI/h_omega);
 }
 
 void finish()
 //free memory
 {
-
     free(h_x);
     free(h_v);
     free(h_w);
-    
-    curandDestroyGenerator(gen);
-    
-    if (h_moments) {
-        free(h_sv);
-        free(h_sv2);
-        free(h_dx);
-
-    }
+    free(h_sv);
+    free(h_sv2);
+    free(h_dx);
 }
 
 int main(int argc, char **argv)
 {
-    parse_cla(argc, argv);
-    if (!h_moments && !h_traj && !h_hist) {
-        usage(argv);
-        return -1;
-    }
+    //weak RNG init
+    srand(time(NULL));
 
     prepare();
-    
     initial_conditions();
     
     //asymptotic long time average velocity <<v>>, <<v^2>> and diffusion coefficient
-    if (h_moments) {
-        float *av, *av2, *dc;
-        int i;
-
-        av = (float*)malloc(size_p);
-        av2 = (float*)malloc(size_p);
-        dc = (float*)malloc(size_p);
-
-        if ( !strcmp(h_domain, "1d") ) {
-            run_moments<<<h_grid, h_block>>>(d_x, d_v, d_w, d_sv, d_sv2, d_dx, d_states);
-            moments(av, av2, dc);
-
-            printf("#%c <<v>> <<v^2>> D_x\n", h_domainx);
-            for (i = 0; i < h_points; i++) {
-                printf("%e %e %e %e\n", h_dx[i], av[i], av2[i], dc[i]);
-            }
-
-        } else {
-            float h_dy, dytmp, dystep;
-            int j;
-            
-            dytmp = h_beginy;
-            dystep = (h_endy - h_beginy)/h_points;
-            
-            printf("#%c %c <<v>> <<v^2>> D_x\n", h_domainx, h_domainy);
-            
-            for (i = 0; i < h_points; i++) {
-                if (h_logy) {
-                    h_dy = pow(10.0f, dytmp);
-                } else {
-                    h_dy = dytmp;
-                }
-
-                switch(h_domainy) {
-                    case 'a':
-                        break;
-                    case 'w':
-                        h_omega = h_dy;
-                        break;
-                    case 'f':
-                        break;
-                    case 'g':
-                        break;
-                    case 'D':
-                        break;
-                    case 'p':
-                        break;
-                    case 'l':
-                        break;
-                }
-
-                run_moments<<<h_grid, h_block>>>(d_x, d_v, d_w, d_sv, d_sv2, d_dx, d_states);
-                moments(av, av2, dc);
-                
-                for (j = 0; j < h_points; j++) {
-                    printf("%e %e %e %e %e\n", h_dx[j], h_dy, av[j], av2[j], dc[j]);
-                }
-
-                //blank line for plotting purposes
-                printf("\n");
-
-                initial_conditions();
-
-                dytmp += dystep;
-            }
-        }
-
-        free(av);
-        free(av2);
-        free(dc);
-    }
-
-    //ensemble averaged trajectory <x>(t), <v>(t) and <x^2>(t), <v^2>(t)
-    if (h_traj) {
-        float t, sx, sv, sx2, sv2;
-        int i;
-
-        printf("#t <x> <v> <x^2> <v^2>\n");
-
-        for (i = 0; i < h_periods; i++) {
-            run_traj<<<h_grid, h_block>>>(d_x, d_v, d_w, d_states);
-            copy_from_dev();
-            t = i*2.0f*PI/h_omega;
-            ensemble_average(h_x, h_v, sx, sv, sx2, sv2);
-            printf("%e %e %e %e %e\n", t, sx, sv, sx2, sv2);
-        }
-    }
-
-    //the final position x and velocity v of all paths
-    if (h_hist) {
-        int i;
-
-        run_traj<<<h_grid, h_block>>>(d_x, d_v, d_w, d_states);
-        copy_from_dev();
-
-        printf("#x v\n");
-        
-        for (i = 0; i < h_threads; i++) {
-            printf("%e %e\n", h_x[i], h_v[i]); 
-        }
-    }
+    float av  = 0.0f, 
+	  av2 = 0.0f, 
+	  dc  = 0.0f;
+    int i;
+    run_moments(h_x, h_v, h_w);
+    moments(&av,&av2,&dc);
+    
+    printf("#<<v>> <<v^2>> D_x\n");
+    printf("%e %e %e\n", av, av2, dc);
 
     finish();
-
     return 0;
 }
