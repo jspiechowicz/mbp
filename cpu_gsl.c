@@ -5,13 +5,6 @@
  *
  * cpu version with GSL
  */
-
-/******
- * !!!!!!!!!!!!!!!!!!!!!!!!!
- * NOT FINISHED!!!!!!!!!!!!!
- * !!!!!!!!!!!!!!!!!!!!!!!!!
- */
-
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
@@ -275,9 +268,6 @@ void predcorr(float *x, float *v, float *w, int *ix, int *iw, int *pcd, float dt
     l_vtt = drift(predl_x, predl_v, predl_w, p);
     //l_wtt = p->omega;
 
-    //x[i] = l_x + 0.5f*(l_xt + l_xtt)*dt;
-    //v[i] = l_v + 0.5f*(l_vt + l_vtt)*dt + diffusion(dt, p, rg) + adapted_jump(pcd, dt, p, rg);
-    //w[i] = l_w + 0.5f*(l_wt + l_wtt)*dt;
     l_x += 0.5f*(l_xt + l_xtt)*dt;
     l_v += 0.5f*(l_vt + l_vtt)*dt + diffusion(dt, p, rg) + adapted_jump(pcd, dt, p, rg);
     l_w += 0.5f*(l_wt + l_wtt)*dt;
