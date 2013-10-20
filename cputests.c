@@ -145,7 +145,7 @@ void dump_params(params * p)
   fprintf(stdout,"#Dg:%f\n",p->Dg);
   fprintf(stdout,"#Dp:%f\n",p->Dp);
   fprintf(stdout,"#lambda:%f\n",p->lambda);
-  fprintf(stdout,"#%sbiased posisson\n",p->biased?"":"un");
+  fprintf(stdout,"#%sbiased posisson\n",p->biased?"un":"");
   fprintf(stdout,"#\n");
   fprintf(stdout,"#paths:%ld\n",p->paths);
   fprintf(stdout,"#periods:%ld\n",p->periods);
