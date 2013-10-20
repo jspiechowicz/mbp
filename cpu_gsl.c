@@ -392,7 +392,8 @@ int simulate(params *p, gsl_rng *rg)
 
   sv  /= steps*(p->paths);
   sv2 /= steps*(p->paths);
-  printf("%e %e\n",sv,sv2);
+  fprintf(stdout,"%e %e\n",sv,sv2);
+  fflush(stdout);
 
   return 1;//EXIT_SUCCESS;
 }
