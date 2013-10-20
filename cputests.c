@@ -39,6 +39,7 @@ static struct option options[] = {
     {"trans", required_argument, NULL, 'm'},
     {"spp", required_argument, NULL, 'n'},
     {"algorithm", required_argument, NULL, 'o'},
+    {"help", no_argument, NULL, 'p'},
 };
 
 void usage(char **argv)
@@ -53,7 +54,7 @@ void usage(char **argv)
     printf("    -f, --Dp=FLOAT          set the Poissonian noise intensity 'Dp' to FLOAT\n");
     printf("    -g, --lambda=FLOAT      set the Poissonian kicks frequency '\\lambda' to FLOAT\n\n");
     printf("    -h, --comp=INT          choose between biased and unbiased Poissonian noise. INT can be one of:\n");
-    printf("                            0: biased; 1: unbiased\n");
+    printf("                            0: biased (default); 1: unbiased\n");
     printf("Simulation params:\n");
     printf("    -k, --paths=LONG        set the number of paths to LONG\n");
     printf("    -l, --periods=LONG      set the number of periods to LONG\n");
@@ -63,6 +64,7 @@ void usage(char **argv)
     printf("    -o, --algorithm=STRING  sets the algorithm. STRING can be one of:\n");
     printf("                            predcorr: simplified weak order 2.0 adapted predictor-corrector\n");
     printf("                            euler: simplified weak order 1.0 regular euler-maruyama\n");
+    printf("    -p, --help		prints this help and exits\n");
     printf("\n");
 }
 
@@ -84,7 +86,7 @@ typedef struct {
 
 void set_parameters(int argc, char **argv, params * p){
   int c;
-  while( (c = getopt_long(argc, argv, "a:b:c:d:e:f:g:h:k:l:m:n:o", options, NULL)) != EOF) {
+  while( (c = getopt_long(argc, argv, "a:b:c:d:e:f:g:h:k:l:m:n:o:p", options, NULL)) != EOF) {
     switch (c) {
       case 'a':
 	sscanf(optarg, "%f", &(p->amp));
@@ -124,6 +126,10 @@ void set_parameters(int argc, char **argv, params * p){
 	break;
       case 'o':
 	p->_2ndorder = !strcmp(optarg, "predcorr") ? true : false;
+	break;
+      case 'p':
+	usage(argv);
+	exit(0);
 	break;
     }
   }
