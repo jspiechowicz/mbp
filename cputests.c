@@ -257,7 +257,7 @@ void predcorr(float *x, float *v, float *w, int *ix, int *iw, int *pcd, float dt
   float basex = 1.0f,
 	basew = PI2;
 
-  for (i = 0; i < p->paths; ++i){
+  for (i = (p->paths)==1?0:(p->paths); i < (p->paths)*2; ++i){
     l_x = x[i];
     l_v = v[i];
     l_w = w[i];
@@ -359,6 +359,9 @@ int simulate(params *p, gsl_rng *rg)
   long i, j, period, steps,
        total_periods = (p->periods) + (p->trans);
   float dt = PI2/(p->omega)/(p->spp); 
+  int exponent,
+      max_exponent = (p->paths)==1?1:(int)(log(p->paths)/log(2));
+  p->paths = (long)pow(2,max_exponent);
 
   //counters for folding
   size_t sizei = p->paths*sizeof(int);
@@ -385,35 +388,40 @@ int simulate(params *p, gsl_rng *rg)
   if (p->_2ndorder) //jump countdown
     pcd = floor(-logf(gsl_ran_flat(rg,0,1))/(p->lambda)/dt + 0.5f);
     
-  float sv = 0.0f, 
-	sv2 = 0.0f;
-  int factor10 = 10;
-  fprintf(stdout,"#period <<v>> <<v^2>> tic-tac\n");
+  fprintf(stdout,"#paths period <<v>> <<v^2>> tic-tac\n");
   fflush(stdout);
-  for (period = 0; period < total_periods; ++period) {
-    for (i = 0; i < p->spp; ++i){
-      //algorithm
-      if (p->_2ndorder)
-	predcorr(x, v, w, ix, iw, &pcd, dt, p, rg);
-      else
-	eulermaruyama(x, v, w, ix, iw, dt, p, rg);
-      
-      if (period > p->trans){
-	for (j = 0; j < p->paths; ++j){
-	  sv += v[j];
-	  sv2 += v[j]*v[j];
+  for (exponent = 0; exponent <= max_exponent; ++exponent){
+    p->paths = pow(2,exponent);
+
+    float sv = 0.0f, 
+	  sv2 = 0.0f;
+    int factor10 = 10;
+    for (period = 0; period < total_periods; ++period) {
+      for (i = 0; i < p->spp; ++i){
+	//algorithm
+	if (p->_2ndorder)
+	  predcorr(x, v, w, ix, iw, &pcd, dt, p, rg);
+	else
+	  eulermaruyama(x, v, w, ix, iw, dt, p, rg);
+	
+	if (period > p->trans){
+	  for (j = 0; j < p->paths; ++j){
+	    sv += v[j];
+	    sv2 += v[j]*v[j];
+	  }
 	}
+      }
+
+      if (period == factor10){
+	steps = (p->spp) * period;
+	factor10 *=10;
+	sv  /= steps*(p->paths);
+	sv2 /= steps*(p->paths);
+	fprintf(stdout,"%ld %ld %e %e %f\n",p->paths,period,sv,sv2,(clock()-tic)/(double)CLOCKS_PER_SEC);
+	fflush(stdout);
       }
     }
 
-    if (period == factor10){
-      steps = (p->spp) * period;
-      factor10 *=10;
-      sv  /= steps*(p->paths);
-      sv2 /= steps*(p->paths);
-      fprintf(stdout,"%ld %e %e %f\n",period,sv,sv2,(clock()-tic)/(double)CLOCKS_PER_SEC);
-      fflush(stdout);
-    }
   }
   
   return 1;//EXIT_SUCCESS;
@@ -431,9 +439,9 @@ int main(int argc, char **argv)
     0.0f,		/*	Dp		*/
     0.0f,		/*	lambda		*/
     false,		/*	biased		*/
-    10,			/*	paths		*/
+    32,			/*	paths		*/
     10000,		/*	periods		*/
-    100,		/*	trans		*/
+    99,			/*	trans		*/
     200,		/*	spp		*/
     true,		/*	2nd order	*/
   };/*>>>*/	
