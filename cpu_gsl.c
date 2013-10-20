@@ -4,6 +4,10 @@
  * see J. Spiechowicz, J. Luczka and P. Hanggi, J. Stat. Mech. (2013) P02044
  *
  * cpu version with GSL
+ *
+ * This file is subject to the terms and conditions of the X11 (MIT) License.
+ * LM, lukasz.machura@us.edu.pl
+ *
  */
 #include <stdio.h>
 #include <string.h>

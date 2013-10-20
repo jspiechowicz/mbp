@@ -4,9 +4,11 @@
  * see J. Spiechowicz, J. Luczka and P. Hanggi, J. Stat. Mech. (2013) P02044
  *
  * cpu version with GSL
- *
- * this is a testing version, 
+ * this is a testing version of cpu_gsl.c, 
  * with prints after 10^N periods (N=1,2,3,4,5...)
+ *
+ * This file is subject to the terms and conditions of the X11 (MIT) License.
+ * LM, lukasz.machura@us.edu.pl
  * 
  */
 #include <stdio.h>
