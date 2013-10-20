@@ -13,8 +13,14 @@ prog: prog.cu
 cpu: cpu_gsl.c
 	$(GCC) $(GCCFLAGS) -o cpu cpu_gsl.c $(GSLLINK) -lm
 
+cputests: cputests.c
+	$(GCC) $(GCCFLAGS) -o cputests cputests.c $(GSLLINK) -lm
+
+
 .PHONY: clean mrproper
 
 clean: 
 	if test -e cpu ; then rm cpu ; fi
+	if test -e cputests ; then rm cputests ; fi
 	if test -e prog ; then rm prog ; fi
+	if test -d tests ; then rm -rf tests; fi
