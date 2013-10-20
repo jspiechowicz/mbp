@@ -1,6 +1,6 @@
 #!/bin/bash
 
-prog=cputests
+prog=icputests
 test -e $prog || make $prog
 
 TDIR=ICPUTESTS
