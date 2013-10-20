@@ -343,7 +343,7 @@ int simulate(params *p, gsl_rng *rg)
   //silent counters
   //step size & number of steps
   long i, j,
-       steps = (p->spp) * (p->paths),
+       steps = (p->spp) * (p->periods),
        trigger = (p->trans) * steps;
   float dt = PI2/(p->omega)/(p->spp); 
 
