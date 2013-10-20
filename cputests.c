@@ -386,7 +386,8 @@ int simulate(params *p, gsl_rng *rg)
   float sv = 0.0f, 
 	sv2 = 0.0f;
   int factor10 = 10;
-  printf("#period <<v>> <<v^2>> tic-tac\n");
+  fprintf(stdout,"#period <<v>> <<v^2>> tic-tac\n");
+  fflush(stdout);
   for (period = 0; period < total_periods; ++period) {
     for (i = 0; i < p->spp; ++i){
       //algorithm
@@ -408,7 +409,8 @@ int simulate(params *p, gsl_rng *rg)
       factor10 *=10;
       sv  /= steps*(p->paths);
       sv2 /= steps*(p->paths);
-      printf("%ld %e %e %f\n",period,sv,sv2,(clock()-tic)/(double)CLOCKS_PER_SEC);
+      fprintf(stdout,"%ld %e %e %f\n",period,sv,sv2,(clock()-tic)/(double)CLOCKS_PER_SEC);
+      fflush(stdout);
     }
   }
   
