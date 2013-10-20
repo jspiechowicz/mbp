@@ -4,6 +4,10 @@
  * see J. Spiechowicz, J. Luczka and P. Hanggi, J. Stat. Mech. (2013) P02044
  *
  * cpu version with GSL
+ *
+ * This file is subject to the terms and conditions of the X11 (MIT) License.
+ * LM, lukasz.machura@us.edu.pl
+ *
  */
 #include <stdio.h>
 #include <string.h>
@@ -133,7 +137,7 @@ void dump_params(params * p)
   fprintf(stdout,"#Dg:%f\n",p->Dg);
   fprintf(stdout,"#Dp:%f\n",p->Dp);
   fprintf(stdout,"#lambda:%f\n",p->lambda);
-  fprintf(stdout,"#%sbiased posisson\n",p->biased?"":"un");
+  fprintf(stdout,"#%sbiased posisson\n",p->biased?"un":"");
   fprintf(stdout,"#\n");
   fprintf(stdout,"#paths:%ld\n",p->paths);
   fprintf(stdout,"#periods:%ld\n",p->periods);
