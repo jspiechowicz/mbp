@@ -15,9 +15,9 @@
  *  - exponential Poissonian kicks amplitude distribution
  *  - simplified weak order 1.0 regular euler-maruyama scheme
  *  - simplified weak order 2.0 adapted predictor-corrector scheme
- *  - asymptotic long time average velocity <<v>> and <<v^2>>
- *  - ensemble averaged trajectory <x>(t) and <v>(t)
- *  - the final position of all paths for histogram generation
+ *  - asymptotic long time average velocity <<v>>, <<v^2>> and diffusion coefficient
+ *  - ensemble averaged trajectory <x>(t), <v>(t) and <x^2>(t), <v^2>(t)
+ *  - the final position x and velocity v of all paths for histogram generation
  *  - path parameters folding for utilization of single precision arithmetics
  *  - scan over multiple values of the system parameters in a single kernel call
  *  - simultaneous scan over two system parameters
