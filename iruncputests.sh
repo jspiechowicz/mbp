@@ -3,7 +3,7 @@
 prog=icputests
 test -e $prog || make $prog
 
-TDIR=ICPUTESTS
+TDIR=dir_$prog
 test -d $TDIR || mkdir -p $TDIR
 
 force=0.1
