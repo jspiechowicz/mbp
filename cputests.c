@@ -315,7 +315,7 @@ void eulermaruyama(float *x, float *v, float *w, int *ix, int *iw, float dt, par
   float basex = 1.0f,
 	basew = PI2;
 
-  for (i = 0; i < p->paths; ++i){
+  for (i = (p->paths)==1?0:(p->paths); i < (p->paths)*2; ++i){
     l_x = x[i];
     l_v = v[i];
     l_w = w[i];
@@ -390,7 +390,7 @@ int simulate(params *p, gsl_rng *rg)
     
   fprintf(stdout,"#paths period <<v>> <<v^2>> tic-tac\n");
   fflush(stdout);
-  for (exponent = 0; exponent <= max_exponent; ++exponent){
+  for (exponent = 0; exponent < max_exponent; ++exponent){
     p->paths = pow(2,exponent);
 
     float sv = 0.0f, 
@@ -404,8 +404,8 @@ int simulate(params *p, gsl_rng *rg)
 	else
 	  eulermaruyama(x, v, w, ix, iw, dt, p, rg);
 	
-	if (period > p->trans){
-	  for (j = 0; j < p->paths; ++j){
+	if (period >= p->trans){
+	  for (j = 0; j < p->paths * 2; ++j){
 	    sv += v[j];
 	    sv2 += v[j]*v[j];
 	  }
@@ -415,9 +415,9 @@ int simulate(params *p, gsl_rng *rg)
       if (period == factor10){
 	steps = (p->spp) * period;
 	factor10 *=10;
-	sv  /= steps*(p->paths);
-	sv2 /= steps*(p->paths);
-	fprintf(stdout,"%ld %ld %e %e %f\n",p->paths,period,sv,sv2,(clock()-tic)/(double)CLOCKS_PER_SEC);
+	sv  /= steps*(p->paths)*2;
+	sv2 /= steps*(p->paths)*2;
+	fprintf(stdout,"%ld %ld %e %e %f\n",p->paths*2,period,sv,sv2,(clock()-tic)/(double)CLOCKS_PER_SEC);
 	fflush(stdout);
       }
     }
