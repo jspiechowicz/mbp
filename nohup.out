@@ -1,7 +1,0 @@
-GSL_RNG_SEED=26172
-GSL_RNG_SEED=6366
-GSL_RNG_SEED=28704
-gcc -O3 -funroll-all-loops -fomit-frame-pointer -ffast-math -o cputests cputests.c -L/usr/lib/ -lgsl -lgslcblas -lm
-GSL_RNG_SEED=20839
-GSL_RNG_SEED=30463
-./js_doubletest.sh: line 20: 24872 Killed                  GSL_RNG_SEED=$RANDOM ./$prog --amp=$a --omega=$w --force=$force --gam=$gamma --Dg=$Dg --Dp=$Dp --lambda=$lambda --paths=$paths --periods=$periods --algorithm=euler --spp=500 > ${TDIR}/gauss_paths${paths}.dat
