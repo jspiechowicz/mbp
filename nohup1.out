@@ -1,0 +1,2 @@
+icc -fp-model fast=1 -o icputests cputests.c -L/usr/lib/ -lgsl -lgslcblas -lm
+GSL_RNG_SEED=18503
